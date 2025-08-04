@@ -51,3 +51,4 @@ impl PartialEq for Dna4 {
 impl Eq for Dna4 {}
 
 }
+
