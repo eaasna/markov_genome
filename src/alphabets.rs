@@ -1,7 +1,7 @@
 pub mod alphabets {
     
 use std::hash::{Hash, Hasher};
-use std::fmt::{Debug};
+use std::fmt::{Debug, Display};
 
 #[derive(Debug)]
 pub enum Dna4 {
