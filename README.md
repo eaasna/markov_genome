@@ -1,5 +1,5 @@
 # Markov genome
-Model a sequence database as a Markov process of order n and simulate random sequences with a similar k-mer count distribution.
+Model a sequence database as a Markov process of order n and simulate random sequences with a similar k-mer count distribution. Markov genome ignores case and can model arbitrary 8-bit alphabets.  
 
 ## Download and Installation
 
@@ -26,5 +26,17 @@ The `markov_genome` binary can be found in `target/release/`.
 You may want to add the executable to your PATH:
 ```
 export PATH=$(pwd)/target/release/markov_genome:$PATH
+markov_genome --help
+```
+
+## Sequence simulation
+
+Learn the transition probabilities of the test reference database and use a Markov process of order 3 to simulate two chromosomes of length 100bp:   
+```
+markov_genome --input test/ref.fasta --output sim.fasta --order 3 --lens 100 --lens 100
+```
+
+For a detailed list of options, see the help page:
+```
 markov_genome --help
 ```
