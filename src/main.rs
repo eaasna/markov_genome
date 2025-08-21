@@ -1,9 +1,9 @@
 use clap::Parser;
 use bio::io::fasta::{Reader, Writer};
-//use seq_io::fasta::{Reader,Record,Writer};
 use std::collections::HashMap;
 use std::fmt::Display;
 use rand::prelude::*;
+use std::hash::Hash;
 
 #[derive(Parser, Debug)]
 #[command(version, about, long_about = None)]
@@ -46,6 +46,18 @@ where
     println!();
 }
 
+pub fn update_count_map<K>(map : &mut HashMap<K, usize>, key : K)
+where K: Eq, K: Hash
+{ 
+    // count k-mers
+    if let Some(count) = map.get_mut(&key) {
+        *count = *count + 1;
+    }
+    else {
+        map.insert(key, 1);
+    }
+}
+
 fn main() {
     let mut args = Args::parse();
 
@@ -60,17 +72,14 @@ fn main() {
     let mut kmer_counts = HashMap::new();
     let mut char_counts = HashMap::new();
 
-    // markov library
-    use markov::Chain;
-    let mut chain = Chain::of_order(args.order);
-
-    // manual Markov model
+    // seed for reproducible results
     let mut rng = StdRng::seed_from_u64(args.seed);
 
     if args.verbose {
         println!("Input FASTA");
     }
 
+    let mut ref_len : usize = 0;
     for result in records {
         let record = result.as_ref().expect("Error during fasta record parsing");
         
@@ -78,56 +87,47 @@ fn main() {
             print_record(record.seq(), record.id());
         }
         
-        // count k-mers
         for i in 0..record.seq().len()-args.order {
             let mut kmer = record.seq()[i..i+args.order].to_vec();
             for i in 0..kmer.len() {
-                //print!("{}\t", kmer[i]);
-                let mut c = &mut kmer[i];
-                //print!("{}\t", int_to_char(c));
+                let c = &mut kmer[i];
                 kmer[i] = char_to_int(&mut int_to_char(c)); // ignore case
-                //print!("{}\n", kmer[i]);
+                /*
+                print!("{}\t", kmer[i]);
+                print!("{}\t", int_to_char(c));
+                print!("{}\n", kmer[i]);
+                */
             }
             
             let c = kmer[0];
-            if let Some(count) = char_counts.get_mut(&c) {
-                *count = *count + 1;
-            }
-            else {
-                char_counts.insert(c, 1);
-            }
-            
-            if let Some(count) = kmer_counts.get_mut(&kmer) {
-                *count = *count + 1;
-            }
-            else {
-                kmer_counts.insert(kmer, 1);
-            }
+            // count chars and k-mers
+            update_count_map(&mut char_counts, c);
+            update_count_map(&mut kmer_counts, kmer);
+            ref_len += 1;
         }
-        
-        // train the chain on some vectors
-        chain.feed(record.seq());
-        //TODO: learn Markov chain Übergangswahrscheinlichkeiten from kmer_counts
     }
     
-    let mut ref_len : usize = 0;
-    
     if args.verbose {
+        let mut kmer_count_total = 0;
         for (k, n) in &kmer_counts {
+            kmer_count_total += n;
             for i in k {
                 let c = int_to_char(i);
                 print!("{c}");
             }
             print!(":{n}\n");
         }
+        assert_eq!(ref_len, kmer_count_total);
    
+        let mut char_count_total = 0;
         for (i, n) in &char_counts {
+            char_count_total += n;
             let c = int_to_char(i);
             //print!("{i}\t");
             print!("{c}");
             print!(":{n}\n");
-            ref_len += n;
         }
+        assert_eq!(ref_len, char_count_total);
     }
 
     // generate sequences
@@ -139,8 +139,6 @@ fn main() {
     }
     
     for l in args.lens {
-        //TODO: make deterministic using a seed
-        let mut iter = chain.iter().scan(args.seed, |_state, x| {return Some(x)});
         let mut rec_out: Vec<u8> = Vec::new();
 
         // initialize sequence by sampling from char probability distribution
@@ -155,30 +153,43 @@ fn main() {
                 }
             }
         }
+       
+        let alphabet: Vec<u8> = char_counts.clone().into_keys().collect();
+
+        // walk through Markov chain
         for _ in args.order..l {
-            // Markov library
-            let r = iter.next();
-            match r {
-                Some(c) => rec_out.push(c[0]),
-                None    => panic!("Reached iterator end"),
+            let mut prev_states = Vec::from_iter(rec_out[(rec_out.len() - args.order + 1)..rec_out.len()].iter().cloned());
+            prev_states.push(alphabet[0]);
+
+            // gather cum probility distribution of k-mers
+            let mut total_sum : usize = 0;
+            let mut next_count : Vec<usize> = Vec::new();
+            for next in &alphabet {
+                prev_states[args.order - 1] = *next;
+                if let Some(count) = kmer_counts.get(&prev_states) {
+                    next_count.push(*count);
+                    total_sum += *count;
+                }
             }
 
-            // std
+            // apply decision border from random probability
             let p = rng.random_range(0.0..1.0);
-            //TODO: get k-mer that corresponds to probability
-            /*
             let mut cum_sum : usize = 0;
-            for (k, n) in &kmer_counts {
-                cum_sum += n; 
-                if cum_sum >= 1 {
-                    rec_out.push(*k);
+            let decision_border = ((total_sum as f64)* p) as usize;
+            for i in 0..next_count.len() {
+                cum_sum += next_count[i];
+                if cum_sum >= decision_border {
+                    rec_out.push(alphabet[i]);
+                    break;
                 }
-            }*
+            }
         }
         
         if args.verbose {
             print_record(&rec_out, id);
         }
+
+        assert_eq!(rec_out.len(), l);
         let _ = writer.as_mut().expect("Error writing record").write(&id.to_string(), None, rec_out.as_slice());
         id += 1;
     }
