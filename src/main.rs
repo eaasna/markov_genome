@@ -179,6 +179,14 @@ fn main() {
                     state_sum += *count;
                 }
             }
+            
+            if next_count.len() == 0 {
+                // avoid terminating early by defaulting to uniform transition probabilities
+                for _ in &alphabet {
+                    next_count.push(1);
+                    state_sum += 1;
+                }
+            }
 
             // apply decision border from random probability
             let p = rng.random_range(0.0..1.0);
