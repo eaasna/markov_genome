@@ -168,21 +168,22 @@ fn main() {
             prev_states.push(alphabet[0]);
             assert_eq!(prev_states.len(), args.order);
 
-            // gather cum probability distribution of k-mers
-            let mut total_sum : usize = 0;
+            // for some state e.g. AC gather the occurrence counts of k-mers ACA, ACC, ACG, ACT
+            // then normalize to find the transition probabilities
+            let mut state_sum : usize = 0;
             let mut next_count : Vec<usize> = Vec::new();
             for next in &alphabet {
                 prev_states[args.order - 1] = *next;
                 if let Some(count) = kmer_counts.get(&prev_states) {
                     next_count.push(*count);
-                    total_sum += *count;
+                    state_sum += *count;
                 }
             }
 
             // apply decision border from random probability
             let p = rng.random_range(0.0..1.0);
             let mut cum_sum : usize = 0;
-            let decision_border = ((total_sum as f64)* p) as usize;
+            let decision_border = ((state_sum as f64)* p) as usize;
             for i in 0..next_count.len() {
                 cum_sum += next_count[i];
                 if cum_sum >= decision_border {
