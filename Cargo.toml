@@ -1,7 +1,7 @@
 [package]
 name = "markov_genome"
 version = "0.1.0"
-edition = "2025"
+edition = "2021"
 authors = ["Evelin Aasna"]
 description = "Learn the properties of a sequence database and simulate random sequences in a Markov process"
 
