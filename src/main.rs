@@ -68,7 +68,7 @@ fn main() {
     let reader = Reader::from_file(args.input);
     let records = reader.expect("fasta reader: got an io::Error or could not read_line()").records();
 
-    // hashmap of k-mer and nucleotide requencies
+    // hashmaps of k-mer and nucleotide frequencies
     let mut kmer_counts = HashMap::new();
     let mut char_counts = HashMap::new();
 
@@ -138,30 +138,37 @@ fn main() {
         println!("Output FASTA");
     }
     
+    let mut alphabet: Vec<u8> = char_counts.clone().into_keys().collect();
+    alphabet.sort_unstable(); // make deterministic
+    
     for l in args.lens {
         let mut rec_out: Vec<u8> = Vec::new();
 
         // initialize sequence by sampling from char probability distribution
-        for _ in 0..args.order {
+        for _ in 0..args.order-1 {
             let i = rng.random_range(0..ref_len);
             //TODO: make cum probability distribution of chars
+            // hold in memory instead of recalculating each time
             let mut cum_sum : usize = 0;
-            for (c, n) in &char_counts {
-                cum_sum += n;
-                if cum_sum >= i {
-                    rec_out.push(*c);
+            for c in &alphabet {
+                if let Some(n) = char_counts.get(c) {
+                    cum_sum += n;
+                    if cum_sum >= i {
+                        rec_out.push(*c);
+                        break;
+                    }
                 }
             }
-        }
-       
-        let alphabet: Vec<u8> = char_counts.clone().into_keys().collect();
+        }      
+        assert_eq!(rec_out.len(), args.order - 1);
 
         // walk through Markov chain
-        for _ in args.order..l {
-            let mut prev_states = Vec::from_iter(rec_out[(rec_out.len() - args.order + 1)..rec_out.len()].iter().cloned());
+        for _ in args.order-1..l {
+            let mut prev_states = Vec::from_iter(rec_out[(rec_out.len() + 1 - args.order)..rec_out.len()].iter().cloned());
             prev_states.push(alphabet[0]);
+            assert_eq!(prev_states.len(), args.order);
 
-            // gather cum probility distribution of k-mers
+            // gather cum probability distribution of k-mers
             let mut total_sum : usize = 0;
             let mut next_count : Vec<usize> = Vec::new();
             for next in &alphabet {
