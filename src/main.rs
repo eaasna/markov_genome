@@ -79,6 +79,7 @@ fn main() {
         println!("Input FASTA");
     }
 
+    let mut kmers: Vec<Vec<u8>> = Vec::new();
     let mut ref_len : usize = 0;
     for result in records {
         let record = result.as_ref().expect("Error during fasta record parsing");
@@ -100,26 +101,30 @@ fn main() {
             }
             
             let c = kmer[0];
+            let previous_states = kmer[0..kmer.len()-1].to_vec();
+            if !kmers.contains(&previous_states) {
+                kmers.push(previous_states);
+            }
             // count chars and k-mers
             update_count_map(&mut char_counts, c);
             update_count_map(&mut kmer_counts, kmer);
+            
             ref_len += 1;
         }
     }
 
     // randomize k-mers
-    let mut kmers: Vec<Vec<u8>> = kmer_counts.clone().into_keys().collect();
-    let mut markov_counts = HashMap::new();
+    // map previous states as they appear in the sequence to alphabetized k-1 mers
+    let mut kmer_random_map = HashMap::new();
+    let kmers_unsorted = kmers.clone();
     kmers.sort_unstable();
-    let mut i : usize = 0;
-    for (_, n) in kmer_counts {
-        markov_counts.insert(kmers[i].clone(), n);
-        i += 1;
+    for i in 0..kmers.len() {
+        kmer_random_map.insert(&kmers_unsorted[i], &kmers[i]);
     }
 
     if args.verbose {
         let mut kmer_count_total = 0;
-        for (k, n) in &markov_counts {
+        for (k, n) in &kmer_counts {
             kmer_count_total += n;
             for i in k {
                 let c = int_to_char(i);
@@ -173,6 +178,15 @@ fn main() {
         // walk through Markov chain
         for _ in args.order-1..l {
             let mut prev_states = Vec::from_iter(rec_out[(rec_out.len() + 1 - args.order)..rec_out.len()].iter().cloned());
+            for i in &prev_states {
+                print!("{}", i);
+            }
+            print!("\t");
+            prev_states = kmer_random_map.get(&prev_states).expect("k-mer not found").to_vec();
+            for i in &prev_states {
+                print!("{}", i);
+            }
+            println!();
             prev_states.push(alphabet[0]);
             assert_eq!(prev_states.len(), args.order);
 
@@ -185,7 +199,7 @@ fn main() {
             let mut next_count : Vec<usize> = Vec::new();
             for next in &alphabet {
                 prev_states[args.order - 1] = *next;
-                if let Some(count) = markov_counts.get(&prev_states) {
+                if let Some(count) = kmer_counts.get(&prev_states) {
                     next_count.push(*count);
                     state_sum += *count;
                 }
