@@ -106,10 +106,20 @@ fn main() {
             ref_len += 1;
         }
     }
-    
+
+    // randomize k-mers
+    let mut kmers: Vec<Vec<u8>> = kmer_counts.clone().into_keys().collect();
+    let mut markov_counts = HashMap::new();
+    kmers.sort_unstable();
+    let mut i : usize = 0;
+    for (_, n) in kmer_counts {
+        markov_counts.insert(kmers[i].clone(), n);
+        i += 1;
+    }
+
     if args.verbose {
         let mut kmer_count_total = 0;
-        for (k, n) in &kmer_counts {
+        for (k, n) in &markov_counts {
             kmer_count_total += n;
             for i in k {
                 let c = int_to_char(i);
@@ -147,8 +157,6 @@ fn main() {
         // initialize sequence by sampling from char probability distribution
         for _ in 0..args.order-1 {
             let i = rng.random_range(0..ref_len);
-            //TODO: make cum probability distribution of chars
-            // hold in memory instead of recalculating each time
             let mut cum_sum : usize = 0;
             for c in &alphabet {
                 if let Some(n) = char_counts.get(c) {
@@ -168,13 +176,16 @@ fn main() {
             prev_states.push(alphabet[0]);
             assert_eq!(prev_states.len(), args.order);
 
-            // for some state e.g. AC gather the occurrence counts of k-mers ACA, ACC, ACG, ACT
+            // For some state e.g. AC gather the occurrence counts of k-mers ACA, ACC, ACG, ACT
             // then normalize to find the transition probabilities
+            //
+            //TODO: make cum probability distribution of k-mers and
+            // hold in memory instead of recalculating each time?
             let mut state_sum : usize = 0;
             let mut next_count : Vec<usize> = Vec::new();
             for next in &alphabet {
                 prev_states[args.order - 1] = *next;
-                if let Some(count) = kmer_counts.get(&prev_states) {
+                if let Some(count) = markov_counts.get(&prev_states) {
                     next_count.push(*count);
                     state_sum += *count;
                 }
