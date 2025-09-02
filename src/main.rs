@@ -79,6 +79,7 @@ fn main() {
         println!("Input FASTA");
     }
 
+    let mut kmers: Vec<Vec<u8>> = Vec::new();
     let mut ref_len : usize = 0;
     for result in records {
         let record = result.as_ref().expect("Error during fasta record parsing");
@@ -100,13 +101,27 @@ fn main() {
             }
             
             let c = kmer[0];
+            let previous_states = kmer[0..kmer.len()-1].to_vec();
+            if !kmers.contains(&previous_states) {
+                kmers.push(previous_states);
+            }
             // count chars and k-mers
             update_count_map(&mut char_counts, c);
             update_count_map(&mut kmer_counts, kmer);
+            
             ref_len += 1;
         }
     }
-    
+
+    // randomize k-mers
+    // map previous states as they appear in the sequence to alphabetized k-1 mers
+    let mut kmer_random_map = HashMap::new();
+    let kmers_unsorted = kmers.clone();
+    kmers.sort_unstable();
+    for i in 0..kmers.len() {
+        kmer_random_map.insert(&kmers_unsorted[i], &kmers[i]);
+    }
+
     if args.verbose {
         let mut kmer_count_total = 0;
         for (k, n) in &kmer_counts {
@@ -147,8 +162,6 @@ fn main() {
         // initialize sequence by sampling from char probability distribution
         for _ in 0..args.order-1 {
             let i = rng.random_range(0..ref_len);
-            //TODO: make cum probability distribution of chars
-            // hold in memory instead of recalculating each time
             let mut cum_sum : usize = 0;
             for c in &alphabet {
                 if let Some(n) = char_counts.get(c) {
@@ -165,11 +178,23 @@ fn main() {
         // walk through Markov chain
         for _ in args.order-1..l {
             let mut prev_states = Vec::from_iter(rec_out[(rec_out.len() + 1 - args.order)..rec_out.len()].iter().cloned());
+            for i in &prev_states {
+                print!("{}", i);
+            }
+            print!("\t");
+            prev_states = kmer_random_map.get(&prev_states).expect("k-mer not found").to_vec();
+            for i in &prev_states {
+                print!("{}", i);
+            }
+            println!();
             prev_states.push(alphabet[0]);
             assert_eq!(prev_states.len(), args.order);
 
-            // for some state e.g. AC gather the occurrence counts of k-mers ACA, ACC, ACG, ACT
+            // For some state e.g. AC gather the occurrence counts of k-mers ACA, ACC, ACG, ACT
             // then normalize to find the transition probabilities
+            //
+            //TODO: make cum probability distribution of k-mers and
+            // hold in memory instead of recalculating each time?
             let mut state_sum : usize = 0;
             let mut next_count : Vec<usize> = Vec::new();
             for next in &alphabet {
