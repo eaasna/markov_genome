@@ -5,27 +5,8 @@ use std::fmt::Display;
 use rand::prelude::*;
 use std::hash::Hash;
 
-#[derive(Parser, Debug)]
-#[command(version, about, long_about = None)]
-pub struct Args {
-    #[arg(short, long)]
-    input: String,
-
-    #[arg(short, long, default_value_t = String::from("seq.fasta"))]
-    output: String,
-    
-    #[arg(short, long)]
-    lens: Vec<usize>,
-
-    #[arg(long, default_value_t = 3)]
-    order: usize,
-
-    #[arg(long, default_value_t = 42)]
-    seed: u64,
-
-    #[arg(short, long, default_value_t = false)]
-    verbose: bool,
-}
+mod args;
+use crate::args::Args;
 
 pub fn char_to_int(c : &char) -> u8 {
     u8::try_from(c.clone()).expect("Char out of range")
