@@ -4,7 +4,7 @@ use std::fmt::Display;
 use rand::prelude::*;
 use std::hash::Hash;
 
-use crate::args::Args;
+use crate::args::SimulateArgs;
 
 pub fn char_to_int(c : &char) -> u8 {
     u8::try_from(c.clone()).expect("Char out of range")
@@ -37,7 +37,7 @@ where K: Eq, K: Hash
     }
 }
 
-pub fn run_markov_simulation(args : &Args) {
+pub fn run_markov_simulation(args : &SimulateArgs) {
     // hashmaps of k-mer and nucleotide frequencies
     let mut kmer_counts = HashMap::new();
     let mut char_counts = HashMap::new();
