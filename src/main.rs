@@ -1,6 +1,4 @@
 use clap::Parser;
-use clap::{arg, command, Command, value_parser};
-use std::path::PathBuf;
 
 mod args;
 use crate::args::{Cli, Commands};
@@ -10,6 +8,8 @@ use crate::markov::run_markov_simulation;
 
 mod mutation;
 use crate::mutation::run_mutation;
+
+mod io;
 
 fn main() {
     let args = Cli::parse();

@@ -1,29 +1,10 @@
-use bio::io::fasta::{Reader, Writer};
+use bio::io::fasta::{Writer};
 use std::collections::HashMap;
-use std::fmt::Display;
 use rand::prelude::*;
 use std::hash::Hash;
 
 use crate::args::SimulateArgs;
-
-pub fn char_to_int(c : &char) -> u8 {
-    u8::try_from(c.clone()).expect("Char out of range")
-}
-
-pub fn int_to_char(i : &u8) -> char {
-    char::from_u32(*i as u32).expect("can not convert to char").to_ascii_uppercase()
-}
-
-pub fn print_record<I: ?Sized>(container : &I, id : impl Display) 
-where
-    for<'a> &'a I: IntoIterator<Item = &'a u8>,
-{
-    println!(">{}", id);
-    for i in container {
-        print!("{}", int_to_char(i));
-    }
-    println!();
-}
+use crate::io::{get_records, print_record, char_to_int, int_to_char};
 
 pub fn update_count_map<K>(map : &mut HashMap<K, usize>, key : K)
 where K: Eq, K: Hash
@@ -49,12 +30,9 @@ pub fn run_markov_simulation(args : &SimulateArgs) {
         println!("Input FASTA");
     }
 
-    let reader = Reader::from_file(args.input.clone());
-    let records = reader.expect("fasta reader: got an io::Error or could not read_line()").records();
-
     // learn Markov probabilities
     let mut ref_len : usize = 0;
-    for result in records {
+    for result in get_records(args.input.clone()) {
         let record = result.as_ref().expect("Error during fasta record parsing");
         
         if args.verbose {
