@@ -15,17 +15,17 @@ name="mason"
 $mason -l 10000 -o $out_dir/$name.fa --seed $seed
 
 name="mouse_chr4"
-echo ">chr4_partial" > $out_dir/$name.fa
+echo ">chr4" > $out_dir/$name.fa
 head -n 7708188 /srv/data/evelina/mouse/dna4.fasta | tail -n 125 >> $out_dir/$name.fa
 
 name="mouse_chr14"
-echo ">chr14_partial" > $out_dir/$name.fa
+echo ">chr14" > $out_dir/$name.fa
 head -n 24097823 /srv/data/evelina/mouse/dna4.fasta | tail -n 125 >> $out_dir/$name.fa
 
 name="human_chr4"
-echo ">chr4_partial" > $out_dir/$name.fa
+echo ">chr4" > $out_dir/$name.fa
 head -n 9618075 /srv/data/evelina/human/dna4.fasta | tail -n 125 >> $out_dir/$name.fa
 
 name="human_chr14"
-echo ">chr14_partial" > $out_dir/$name.fa
+echo ">chr14" > $out_dir/$name.fa
 head -n 27992611 /srv/data/evelina/human/dna4.fasta | tail -n 125 >> $out_dir/$name.fa

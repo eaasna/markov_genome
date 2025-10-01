@@ -13,7 +13,7 @@ run () {
 		name="$1"
 		chr="$2"
 
-		wc -l "$name.fa.dump" | awk '{print $1 "\t./name_chr_e0_s0.fasta.dump" }' | head -n 1 > tmp.counts
+		wc -l "$name.fa.dump" | awk -v n="$name" '{print $1 "\t./"n"_e0_s0.fasta.orig.dump" }' | head -n 1 > tmp.counts
 		find . -name "$name*.fasta.shared.dump" | sort | xargs wc -l | awk '{print $1 "\t" $2}' | head -n -1  >> tmp.counts
 		
 		echo "0" > tmp.errors
@@ -30,8 +30,8 @@ run "mason" "1"
 run "mouse_chr4" "chr4"	
 run "human_chr4" "chr4"
 
-run "mouse_chr14" "chr4"	
-run "human_chr14" "chr4"
+run "mouse_chr14" "chr14"	
+run "human_chr14" "chr14"
 
 if [ 0 -eq 1 ]; then
 
