@@ -1,5 +1,9 @@
 #!/bin/bash
 
+set -ex
+
 cd scripts
-#./mutate.sh
+
+./simulate.sh
+./mutate.sh
 ./make_shared_counts.sh

@@ -45,6 +45,7 @@ pub fn run_mutation(args : &MutateArgs) {
             let mutation_state = rng.random_range(0.0..1.0);
             if mutation_state <= args.error {
                 let var_state = rng.random_range(1..sigma); // for DNA4 there are 3 possible variants
+                //!TODO: nothing is written if not DNA4 alphabet with only capital letters 
                 if let Some(curr_rank) = alphabet_map.get(&record.seq()[i]) {
                     let mutated_rank = (curr_rank + var_state) % sigma;
                     if let Some(var_char) = rank_map.get(&mutated_rank) {
