@@ -6,6 +6,7 @@ use std::hash::Hash;
 use crate::args::SimulateArgs;
 use crate::io::{get_records, print_record, char_to_int, int_to_char};
 
+/// Iterate the value for the given key by +1 if the key exists or add a new key with value 1 if the key does not exist.
 pub fn update_count_map<K>(map : &mut HashMap<K, usize>, key : K)
 where K: Eq, K: Hash
 { 
@@ -18,6 +19,7 @@ where K: Eq, K: Hash
     }
 }
 
+/// Learn the Markov transition probabilities from the given input to simulate output chromosomes of the given lengths.
 pub fn run_markov_simulation(args : &SimulateArgs) {
     // hashmaps of k-mer and nucleotide frequencies
     let mut kmer_counts = HashMap::new();
@@ -44,11 +46,6 @@ pub fn run_markov_simulation(args : &SimulateArgs) {
             for i in 0..kmer.len() {
                 let c = &mut kmer[i];
                 kmer[i] = char_to_int(&mut int_to_char(c)); // ignore case
-                /*
-                print!("{}\t", kmer[i]);
-                print!("{}\t", int_to_char(c));
-                print!("{}\n", kmer[i]);
-                */
             }
             
             let c = kmer[0];

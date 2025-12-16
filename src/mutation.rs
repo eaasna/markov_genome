@@ -5,28 +5,33 @@ use std::collections::{HashMap, HashSet};
 use crate::args::MutateArgs;
 use crate::io::{get_records, print_record, char_to_int, int_to_char};
 
+/// Iterate through FASTA records to gather alphabet on the fly
+pub fn gather_alphabet(alphabet_map : &mut HashMap<u8, usize>, rank_map : &mut HashMap<usize, u8>, args : &MutateArgs)
+{
+    let mut chars = HashSet::new();
+    for result in get_records(args.input.clone()) {
+        let record = result.as_ref().expect("Error during fasta record parsing");
+        for c in record.seq() {
+            chars.insert(char_to_int(&mut int_to_char(c))); // ignore case
+        }
+    }
+    let mut rank = 0;
+    for c in chars.iter() {
+        alphabet_map.insert(c.clone(), rank);
+        rank_map.insert(rank, c.clone());
+        rank += 1;
+    }
+}
+
+/// Step through the input to introduce edits with the given probability.
 pub fn run_mutation(args : &MutateArgs) {
     if args.verbose {
         println!("Input FASTA");
     }
 
-    let mut alphabet_map = HashMap::new();
-    let mut rank_map = HashMap::new();
-    {
-        let mut chars = HashSet::new();
-        for result in get_records(args.input.clone()) {
-            let record = result.as_ref().expect("Error during fasta record parsing");
-            for c in record.seq() {
-                chars.insert(char_to_int(&mut int_to_char(c))); // ignore case
-            }
-        }
-        let mut rank = 0;
-        for c in chars.iter() {
-            alphabet_map.insert(c.clone(), rank);
-            rank_map.insert(rank, c.clone());
-            rank += 1;
-        }
-    }
+    let mut alphabet_map: HashMap<u8, usize> = HashMap::new();
+    let mut rank_map: HashMap<usize, u8> = HashMap::new();
+    gather_alphabet(&mut alphabet_map, &mut rank_map, args);
     let sigma = alphabet_map.len();
 
     let mut writer = Writer::to_file(args.output.clone());
@@ -45,16 +50,15 @@ pub fn run_mutation(args : &MutateArgs) {
             let mutation_state = rng.random_range(0.0..1.0);
             if mutation_state <= args.error {
                 let var_state = rng.random_range(1..sigma); // for DNA4 there are 3 possible variants
-                //!TODO: nothing is written if not DNA4 alphabet with only capital letters 
                 if let Some(curr_rank) = alphabet_map.get(&record.seq()[i]) {
                     let mutated_rank = (curr_rank + var_state) % sigma;
                     if let Some(var_char) = rank_map.get(&mutated_rank) {
                         rec_out.push(*var_char);
                         error_count += 1;
-                        /*
-                        println!("{}", record.seq()[i].to_string() + "\t" + &var_char.to_string());
-                        println!("{}", curr_rank.to_string() + "\t" + &mutated_rank.to_string());
-                        */
+                        if args.debug {
+                            println!("{}", record.seq()[i].to_string() + "\t" + &var_char.to_string());
+                            println!("{}", curr_rank.to_string() + "\t" + &mutated_rank.to_string());
+                        }
                         assert!(record.seq()[i] != *var_char);
                     }
                 }

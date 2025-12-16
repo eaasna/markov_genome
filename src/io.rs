@@ -22,6 +22,7 @@ where
     println!();
 }
 
+/// Read records from FASTA format.
 pub fn get_records(input : String) -> bio::io::fasta::Records<BufReader<File>> { 
     let reader = Reader::from_file(input.clone());
     reader.expect("fasta reader: got an io::Error or could not read_line()").records()

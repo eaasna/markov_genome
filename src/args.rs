@@ -39,6 +39,9 @@ pub struct MutateArgs {
 
     #[arg(short, long, default_value_t = false)]
     pub verbose: bool,
+
+    #[arg(short, long, default_value_t = false)]
+    pub debug: bool,
 }
 #[derive(Debug, Parser)] // requires `derive` feature
 #[command(name = "markov_genome")]

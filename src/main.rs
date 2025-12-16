@@ -1,3 +1,8 @@
+//! # Markov Genome
+//!
+//! `markov_genome` is a collection of utilities for applied Markov modelling in the context of 
+//! biological sequence simulation. 
+
 use clap::Parser;
 
 mod args;
