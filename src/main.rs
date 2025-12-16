@@ -3,6 +3,11 @@
 //! `markov_genome` is a collection of utilities for applied Markov modelling in the context of 
 //! biological sequence simulation. 
 
+/// # Examples
+/// markov_genome --help
+/// markov_genome simulate --input test/ref.fasta --output sim.fasta --lens 100 --lens 200
+/// markov_genome mutate --input sim.fasta --output mut.fasta --error 0.2 
+
 use clap::Parser;
 
 mod args;
