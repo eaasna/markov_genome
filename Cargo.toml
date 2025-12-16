@@ -3,7 +3,12 @@ name = "markov_genome"
 version = "0.1.0"
 edition = "2021"
 authors = ["Evelin Aasna"]
-description = "Learn the properties of a sequence database and simulate random sequences in a Markov process"
+description = "Learn the properties of a FASTA sequence database and simulate sequences in a Markov process"
+keywords = ["bioinformatics", "genomics", "simulation", "markov", "binaries"]
+categories = ["science::bioinformatics::genomics", "science::bioinformatics::sequence-analysis", "simulation"]
+license = "BSD-3-Clause"
+repository = "github.com/eaasna/markov_genome/"
+readme = "README.md"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
