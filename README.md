@@ -16,6 +16,11 @@ Model a sequence database as a Markov process of order n and simulate random seq
 
 
 ## Download and Installation
+### Install with [cargo](https://crates.io/crates/markov_genome) (Linux)
+
+```bash
+cargo install markov_genome
+```
 
 ### Install with [bioconda](http://bioconda.github.io/recipes/markov_genome/README.html) (Linux)
 
