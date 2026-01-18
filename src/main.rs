@@ -13,6 +13,8 @@ use clap::Parser;
 mod args;
 use crate::args::{Cli, Commands};
 
+mod sequence_model;
+
 mod markov;
 use crate::markov::run_markov_simulation;
 
