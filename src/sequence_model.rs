@@ -6,35 +6,6 @@ use bio::io::fasta::Record;
 use crate::args::{SimulateArgs};
 use crate::io::{get_records, print_record, char_to_int, int_to_char};
 
-/// Iterate the value for the given key by +1 if the key exists or add a new key with value 1 if the key does not exist.
-pub fn update_count_map<K>(map : &mut HashMap<K, usize>, key : K)
-where K: Eq, K: Hash
-{ 
-    // count k-mers
-    if let Some(count) = map.get_mut(&key) {
-        *count = *count + 1;
-    }
-    else {
-        map.insert(key, 1);
-    }
-}
-
-pub fn count_record(record : &Record, kmer_counts: &mut HashMap<Vec<u8>, usize>, char_counts: &mut HashMap<u8, usize> , ref_len: &mut usize, order: usize) {
-    for i in 0..record.seq().len()-order {
-        let mut kmer = record.seq()[i..i+order].to_vec();
-        for i in 0..kmer.len() {
-            let c = &mut kmer[i];
-            kmer[i] = char_to_int(&mut int_to_char(c)); // ignore case
-        }
-        
-        let c = kmer[0];
-        // count chars and k-mers
-        update_count_map( kmer_counts, kmer);
-        update_count_map( char_counts, c);
-        *ref_len += 1;
-    }
-}
-
 pub trait SequenceModel {
     fn kmer_counts(&self) -> &HashMap<Vec<u8>, usize>;
     fn char_counts(&self) -> &HashMap<u8, usize>;
@@ -77,6 +48,35 @@ impl SequenceModel for SequenceGrammarModel {
 
     fn ref_len(&self) -> usize {
         self.markov_model.ref_len
+    }
+}
+
+/// Iterate the value for the given key by +1 if the key exists or add a new key with value 1 if the key does not exist.
+pub fn update_count_map<K>(map : &mut HashMap<K, usize>, key : K)
+where K: Eq, K: Hash
+{ 
+    // count k-mers
+    if let Some(count) = map.get_mut(&key) {
+        *count = *count + 1;
+    }
+    else {
+        map.insert(key, 1);
+    }
+}
+
+pub fn count_record(record : &Record, kmer_counts: &mut HashMap<Vec<u8>, usize>, char_counts: &mut HashMap<u8, usize> , ref_len: &mut usize, order: usize) {
+    for i in 0..record.seq().len()-order {
+        let mut kmer = record.seq()[i..i+order].to_vec();
+        for i in 0..kmer.len() {
+            let c = &mut kmer[i];
+            kmer[i] = char_to_int(&mut int_to_char(c)); // ignore case
+        }
+        
+        let c = kmer[0];
+        // count chars and k-mers
+        update_count_map( kmer_counts, kmer);
+        update_count_map( char_counts, c);
+        *ref_len += 1;
     }
 }
 
