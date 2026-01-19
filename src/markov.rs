@@ -1,12 +1,11 @@
 use bio::io::fasta::{Writer};
 use rand::prelude::*;
 
-use crate::sequence_model::{SequenceModel};
 use crate::args::SimulateArgs;
+use crate::sequence_model::{SequenceModel};
 use crate::io::{print_record};
 
-pub fn run_markov_simulation(args : &SimulateArgs) {
-    let sequence_model = SequenceModel::new(args);
+pub fn run_markov_simulation(sequence_model : & impl SequenceModel, args: &SimulateArgs) {
     // seed for reproducible results
     let mut rng = StdRng::seed_from_u64(args.seed);
 
@@ -14,11 +13,7 @@ pub fn run_markov_simulation(args : &SimulateArgs) {
     let mut writer = Writer::to_file(args.output.clone());
     let mut id = 0;
 
-    if args.verbose {
-        println!("Output FASTA");
-    }
-    
-    let mut alphabet: Vec<u8> = sequence_model.char_counts.clone().into_keys().collect();
+    let mut alphabet: Vec<u8> = sequence_model.char_counts().clone().into_keys().collect();
     alphabet.sort_unstable(); // make deterministic
     
     for l in &args.lens {
@@ -26,12 +21,12 @@ pub fn run_markov_simulation(args : &SimulateArgs) {
 
         // initialize sequence by sampling from char probability distribution
         for _ in 0..args.order-1 {
-            let i = rng.random_range(0..sequence_model.ref_len);
+            let i = rng.random_range(0..sequence_model.ref_len());
             //TODO: make cum probability distribution of chars
             // hold in memory instead of recalculating each time
             let mut cum_sum : usize = 0;
             for c in &alphabet {
-                if let Some(n) = sequence_model.char_counts.get(c) {
+                if let Some(n) = sequence_model.char_counts().get(c) {
                     cum_sum += n;
                     if cum_sum >= i {
                         rec_out.push(*c);
@@ -54,7 +49,7 @@ pub fn run_markov_simulation(args : &SimulateArgs) {
             let mut next_count : Vec<usize> = Vec::new();
             for next in &alphabet {
                 prev_states[args.order - 1] = *next;
-                if let Some(count) = sequence_model.kmer_counts.get(&prev_states) {
+                if let Some(count) = sequence_model.kmer_counts().get(&prev_states) {
                     next_count.push(*count);
                     state_sum += *count;
                 }

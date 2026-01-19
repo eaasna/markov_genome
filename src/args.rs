@@ -6,6 +6,9 @@ pub struct SimulateArgs {
     #[arg(short, long)]
     pub input: String,
 
+    #[arg(short, long)]
+    pub annotation: String,
+
     #[arg(short, long, default_value_t = String::from("seq.fasta"))]
     pub output: String,
     
