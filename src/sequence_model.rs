@@ -1,10 +1,10 @@
-use std::collections::HashMap;
 use std::hash::Hash;
+use std::collections::HashMap;
 use std::usize;
 use bio::io::fasta::Record;
 
 use crate::args::{SimulateArgs};
-use crate::io::{get_records, print_record, char_to_int, int_to_char};
+use crate::io::{char_to_int, get_annotations, get_records, int_to_char, print_record};
 
 pub trait SequenceModel {
     fn kmer_counts(&self) -> &HashMap<Vec<u8>, usize>;
@@ -143,17 +143,32 @@ impl SequenceGrammarModel {
         // learn Markov probabilities
         let mut ref_len : usize = 0;
         let mut seq_records = get_records(args.input.clone());
-        let mut annotation_records = get_records(args.annotation.clone());
+        let annotation_records: Result<HashMap<String, Vec<u64>>, std::io::Error> = get_annotations(&args.annotation.clone());
         
         while let Some(Ok(seq_record)) = seq_records.next() {
-            let annotation_record = annotation_records.next().expect("No next").expect("Error during GenMap record parsing");
+            let annotation : &Vec<u64> = annotation_records.as_ref().expect("Error during GenMap record parsing")[seq_record.id()].as_ref();
             // ref_len += seq_record.seq().len();
             // print!("{}", record.seq()[0])
             if args.verbose {
                 print_record(seq_record.seq(), seq_record.id());
             }
             
-            print!("{}", annotation_record.seq().len());
+            println!("{}", seq_record.seq().len());
+            for c in seq_record.seq() {
+                print!("{}", c);
+            }
+            println!();
+            println!("{}", annotation.len());
+            for c in annotation {
+                print!("{}", c);
+            }
+            println!();
+
+            if seq_record.seq().len() != annotation.len() {                
+                panic!("sequence length != annotation length\n");
+            }
+
+            print!("{}", annotation.len());
             count_record(&seq_record, &mut kmer_counts, &mut char_counts, &mut ref_len, args.order);
         }
 
