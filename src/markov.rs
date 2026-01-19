@@ -1,12 +1,12 @@
 use bio::io::fasta::{Writer};
 use rand::prelude::*;
 
-use crate::sequence_model::{build_markov_model};
+use crate::sequence_model::{SequenceModel};
 use crate::args::SimulateArgs;
 use crate::io::{print_record};
 
 pub fn run_markov_simulation(args : &SimulateArgs) {
-    let sequence_model = build_markov_model(args);
+    let sequence_model = SequenceModel::new(args);
     // seed for reproducible results
     let mut rng = StdRng::seed_from_u64(args.seed);
 
