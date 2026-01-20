@@ -1,4 +1,5 @@
 use bio::io::fasta::Record;
+use rand::rngs::StdRng;
 use std::hash::Hash;
 use std::collections::HashMap;
 use std::usize;
@@ -11,12 +12,17 @@ pub trait SequenceModel {
     fn kmer_counts(&self) -> &HashMap<Vec<u8>, usize>;
     fn char_counts(&self) -> &HashMap<u8, usize>;   // 8-bit alphabet
     fn ref_len(&self) -> usize;
+    fn order(&self) -> u8;
+    fn alphabet(&self) -> &Vec<u8>;
+    fn apply_grammar(&self, rng : &mut StdRng, seq : &mut Vec<u8>);
 }
 
 pub struct MarkovModel {
     pub kmer_counts: HashMap<Vec<u8>, usize>,   // <kmer_seq, count>
     pub char_counts: HashMap<u8, usize>,
     pub ref_len: usize,
+    pub order: u8,
+    pub alphabet: Vec<u8>, 
 }   
 
 impl SequenceModel for MarkovModel  {
@@ -30,6 +36,18 @@ impl SequenceModel for MarkovModel  {
 
     fn ref_len(&self) -> usize {
         self.ref_len
+    }
+
+    fn order(&self) -> u8 {
+        self.order
+    }
+
+    fn alphabet(&self) -> &Vec<u8> {
+        &self.alphabet
+    }
+
+    fn apply_grammar(&self, _rng : &mut StdRng, _seq : &mut Vec<u8>) {
+        // do nothing
     }
 }
 
@@ -50,6 +68,20 @@ impl SequenceModel for SequenceGrammarModel {
     fn ref_len(&self) -> usize {
         self.markov_model.ref_len
     }
+
+    fn order(&self) -> u8 {
+        self.markov_model.order
+    }
+
+    fn alphabet(&self) -> &Vec<u8> {
+        self.markov_model.alphabet()
+    }
+
+    fn apply_grammar(&self, rng : &mut StdRng, seq : &mut Vec<u8>) {
+        for rule in &self.grammar {
+            rule.apply(seq, rng);
+        }
+    }
 }
 
 /// Iterate the value for the given key by +1 if the key exists or add a new key with value 1 if the key does not exist.
@@ -66,9 +98,9 @@ where K: Eq, K: Hash
 }
 
 pub fn count_record(record : &Record, kmer_counts: &mut HashMap<Vec<u8>, usize>, 
-                    char_counts: &mut HashMap<u8, usize> , ref_len: &mut usize, order: usize) {
-    for i in 0..record.seq().len()-order {
-        let mut kmer = record.seq()[i..i+order].to_vec();
+                    char_counts: &mut HashMap<u8, usize> , ref_len: &mut usize, order: u8) {
+    for i in 0..record.seq().len()-(order as usize) {
+        let mut kmer = record.seq()[i..i+(order as usize)].to_vec();
         for i in 0..kmer.len() {
             let c = &mut kmer[i];
             kmer[i] = char_to_int(&mut int_to_char(c)); // ignore case
@@ -83,8 +115,16 @@ pub fn count_record(record : &Record, kmer_counts: &mut HashMap<Vec<u8>, usize>,
 }
 
 impl MarkovModel {
+    pub fn from_counted(kmer_counts : &HashMap<Vec<u8>, usize> , char_counts : &HashMap<u8, usize>, ref_len : usize, order : u8) -> Self {
+        let mut alphabet: Vec<u8> = char_counts.clone().into_keys().collect();
+        alphabet.sort_unstable(); // make deterministic
+
+        return MarkovModel {kmer_counts: kmer_counts.clone(), char_counts: char_counts.clone(), ref_len: ref_len, order : order, alphabet : alphabet };
+    }
+
     pub fn new(args : &SimulateArgs) -> Self {
-    // hashmaps of k-mer and nucleotide frequencies
+        // hashmaps of k-mer and nucleotide frequencies
+        //TODO: initialize outside the constructor so no clone()
         let mut kmer_counts = HashMap::new();
         let mut char_counts = HashMap::new();
 
@@ -124,8 +164,9 @@ impl MarkovModel {
             assert_eq!(ref_len, char_count_total);
         }
 
-        return MarkovModel {kmer_counts: kmer_counts, char_counts: char_counts, ref_len: ref_len };
+        return MarkovModel::from_counted(&kmer_counts, &char_counts, ref_len, args.order)
     }
+
 }
 
 impl SequenceGrammarModel {
@@ -146,15 +187,15 @@ impl SequenceGrammarModel {
                 print_record(seq_record.seq(), seq_record.id());
             }
 
+            count_record(&seq_record, &mut kmer_counts, &mut char_counts, &mut ref_len, args.order);
+
             let mut window_pos = Vec::new();
             let pat = find_best_pattern(annotation, &mut window_pos, args.kmer);
 
             for pos in window_pos {
-                let rule = Rule::new(&pat, seq_record.seq(), pos);
-                grammar.push(rule);    
+                let rule = Rule::new(&pat, seq_record.seq(), pos, ref_len);
+                grammar.push(rule);
             }
-
-            count_record(&seq_record, &mut kmer_counts, &mut char_counts, &mut ref_len, args.order);
         }
 
         // test
@@ -181,13 +222,13 @@ impl SequenceGrammarModel {
             assert_eq!(ref_len, char_count_total);
 
             if !grammar.is_empty() {
-                println!("host_len\trepeat_len\tmin_thresh\tseq");
+                println!("ref_len\trepeat_len\tmin_thresh\trepeat_seq");
             }
             for rule in &grammar {
-                print!("{}\t", rule.host_len);
+                print!("{}\t", rule.ref_len);
                 print!("{}\t", rule.pat.repeat_len);
                 print!("{}\t", rule.pat.min_thresh);
-                for i in &rule.seq {
+                for i in &rule.repeat_seq {
                     let c = int_to_char(i);
                     print!("{c}");
                 }
@@ -196,7 +237,7 @@ impl SequenceGrammarModel {
              
         }
 
-        let markov_model = MarkovModel {kmer_counts: kmer_counts, char_counts: char_counts, ref_len: ref_len };
+        let markov_model = MarkovModel::from_counted(&kmer_counts, &char_counts, ref_len, args.order);
         return SequenceGrammarModel { markov_model: markov_model, grammar: grammar };
     }
 }

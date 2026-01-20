@@ -16,7 +16,7 @@ use crate::args::{Cli, Commands};
 mod sequence_model;
 
 mod markov;
-use crate::markov::run_markov_simulation;
+use crate::markov::run_simulation;
 
 mod mutation;
 use crate::mutation::run_mutation;
@@ -37,11 +37,10 @@ fn main() {
             }
             if sim_args.annotation.is_empty() {
                 let sequence_model = MarkovModel::new(&sim_args);
-                run_markov_simulation(&sequence_model, &sim_args);
+                run_simulation(&sequence_model, &sim_args);
             } else {
                 let sequence_model = SequenceGrammarModel::new(&sim_args);
-                run_markov_simulation(&sequence_model, &sim_args);
-                sequence_model.grammar;
+                run_simulation(&sequence_model, &sim_args);
             }
         }
         Commands::Mutate (mut_args) => {

@@ -19,7 +19,7 @@ pub struct SimulateArgs {
     pub lens: Vec<usize>,
 
     #[arg(long, default_value_t = 3)]
-    pub order: usize,
+    pub order: u8,
 
     #[arg(long, default_value_t = 42)]
     pub seed: u64,
