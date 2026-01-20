@@ -3,6 +3,7 @@ use std::hash::Hash;
 use std::collections::HashMap;
 use std::usize;
 
+use crate::grammar::{Rule, find_best_pattern};
 use crate::args::{SimulateArgs};
 use crate::io::{char_to_int, get_annotations, get_records, int_to_char, print_record};
 
@@ -81,73 +82,11 @@ pub fn count_record(record : &Record, kmer_counts: &mut HashMap<Vec<u8>, usize>,
     }
 }
 
-pub fn find_repeat_positions(annotation: &Vec<u64>, window_pos: &mut Vec<usize>, kmer: u8, pat : &Pattern) {
-    let mut max_value : u64 = 0;
-    for c in annotation {
-        if *c > max_value {
-            max_value = *c;
-        }
-    }
-
-    let mut pos : usize = 0;
-    let annot_wind : Vec<&[u64]> = annotation.windows(pat.repeat_len - (kmer as usize) + 1).collect();
-    for window in annot_wind {
-        if window.iter().all(|&v| v > pat.min_thresh) {
-            window_pos.push(pos);
-        }
-        pos+=1;
-    }
-}
-
-#[derive(Copy, Clone)]
-pub struct Pattern {
-    repeat_len : usize,
-    min_thresh : u64, 
-}
-pub struct Rule {
-    pat : Pattern,
-    seq : Vec<u8>,
-    host_len : usize,
-}
-
-impl Rule {
-    pub fn new(pat : &Pattern, seq : &[u8], pos : usize) -> Self {
-        return Rule {pat : *pat, seq : seq[pos..pos + pat.repeat_len].to_vec(), host_len : seq.len()} 
-    }
-} 
-
-fn get_repeat_score(pat : &Pattern, pos : &Vec<usize>) -> u64 {
-    (pat.repeat_len as u64) * pat.min_thresh * (pos.len() as u64)
-}
-
-fn find_best_pattern(annotation: &Vec<u64>, window_pos : &mut Vec<usize>, kmer : u8) -> Pattern {
-    let mut pat = Pattern{repeat_len : kmer as usize, min_thresh : average(annotation)};
-    
-    let mut prev_repeat_score = 0;
-    let mut repeat_score : u64 = 1;
-    while repeat_score > prev_repeat_score {
-        // these variables determine how the parameter space is searched
-        pat.min_thresh += 1;
-        pat.repeat_len += 10;
-
-        prev_repeat_score = repeat_score;
-        window_pos.clear();
-        find_repeat_positions(&annotation, window_pos, kmer, &pat);
-
-        repeat_score = get_repeat_score(&pat, &window_pos);
-    }
-    return pat
-}
-
 impl MarkovModel {
     pub fn new(args : &SimulateArgs) -> Self {
     // hashmaps of k-mer and nucleotide frequencies
         let mut kmer_counts = HashMap::new();
         let mut char_counts = HashMap::new();
-
-        if args.verbose {
-            println!("Input FASTA");
-        }
 
         // learn Markov probabilities
         let mut ref_len : usize = 0;
@@ -189,30 +128,20 @@ impl MarkovModel {
     }
 }
 
-fn average(numbers: &Vec<u64>) -> u64 {
-    numbers.iter().sum::<u64>() / numbers.len() as u64
-}
-
 impl SequenceGrammarModel {
     pub fn new(args : &SimulateArgs) -> Self {
     // hashmaps of k-mer and nucleotide frequencies
         let mut kmer_counts = HashMap::new();
         let mut char_counts = HashMap::new();
 
-        if args.verbose {
-            println!("Input FASTA");
-        }
-
         // learn Markov probabilities
         let mut ref_len : usize = 0;
-        let mut seq_records = get_records(args.input.clone());
+        let mut seq_records: bio::io::fasta::Records<std::io::BufReader<std::fs::File>> = get_records(args.input.clone());
         let annotation_records: Result<HashMap<String, Vec<u64>>, std::io::Error> = get_annotations(&args.annotation.clone());
         
         let mut grammar = Vec::new();
         while let Some(Ok(seq_record)) = seq_records.next() {
             let annotation : &Vec<u64> = annotation_records.as_ref().expect("Error during GenMap record parsing")[seq_record.id()].as_ref();
-            // ref_len += seq_record.seq().len();
-            // print!("{}", record.seq()[0])
             if args.verbose {
                 print_record(seq_record.seq(), seq_record.id());
             }

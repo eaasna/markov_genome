@@ -24,6 +24,8 @@ use crate::sequence_model::{SequenceGrammarModel, MarkovModel};
 
 mod io;
 
+mod grammar;
+
 fn main() {
     let args = Cli::parse();
  
@@ -39,6 +41,7 @@ fn main() {
             } else {
                 let sequence_model = SequenceGrammarModel::new(&sim_args);
                 run_markov_simulation(&sequence_model, &sim_args);
+                sequence_model.grammar;
             }
         }
         Commands::Mutate (mut_args) => {
