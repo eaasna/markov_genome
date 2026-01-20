@@ -1,5 +1,7 @@
 use rand::{rngs::StdRng, Rng};
 
+use crate::io::{char_to_int, int_to_char};
+
 #[derive(Copy, Clone)]
 pub struct Pattern {
     pub repeat_len : usize,
@@ -13,7 +15,13 @@ pub struct Rule {
 
 impl Rule {
     pub fn new(pat : &Pattern, seq : &[u8], pos : usize, ref_len : usize) -> Self {
-        return Rule {pat : *pat, repeat_seq : seq[pos..pos + pat.repeat_len].to_vec(), ref_len : ref_len} 
+        let mut repeat_vec = Vec::new();
+        for i in 0..pat.repeat_len {
+            let mut c = seq[pos + i];
+            repeat_vec.push(char_to_int(&mut int_to_char(&mut c)));  // ignore case
+        }
+
+        return Rule {pat : *pat, repeat_seq : repeat_vec, ref_len : ref_len} 
     }
 
     pub fn apply(&self, seq : &mut Vec<u8>, rng : &mut StdRng) {        

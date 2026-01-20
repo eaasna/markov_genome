@@ -6,7 +6,7 @@ use std::usize;
 
 use crate::grammar::{Rule, find_best_pattern};
 use crate::args::{SimulateArgs};
-use crate::io::{char_to_int, get_annotations, get_records, int_to_char, print_record};
+use crate::io::{char_to_int, get_annotations, get_records, int_to_char};
 
 pub trait SequenceModel {
     fn kmer_counts(&self) -> &HashMap<Vec<u8>, usize>;
@@ -132,11 +132,6 @@ impl MarkovModel {
         let mut ref_len : usize = 0;
         for result in get_records(args.input.clone()) {
             let record = result.as_ref().expect("Error during fasta record parsing");
-            
-            if args.verbose {
-                print_record(record.seq(), record.id());
-            }
-
             count_record(record, &mut kmer_counts, &mut char_counts, &mut ref_len, args.order);
         }
     
@@ -183,10 +178,6 @@ impl SequenceGrammarModel {
         let mut grammar = Vec::new();
         while let Some(Ok(seq_record)) = seq_records.next() {
             let annotation : &Vec<u64> = annotation_records.as_ref().expect("Error during GenMap record parsing")[seq_record.id()].as_ref();
-            if args.verbose {
-                print_record(seq_record.seq(), seq_record.id());
-            }
-
             count_record(&seq_record, &mut kmer_counts, &mut char_counts, &mut ref_len, args.order);
 
             let mut window_pos = Vec::new();

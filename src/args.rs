@@ -6,7 +6,7 @@ pub struct SimulateArgs {
     #[arg(short, long)]
     pub input: String,  // 8-bit alphabet
 
-    #[arg(short, long)]
+    #[arg(short, long, default_value_t = String::default())]
     pub annotation: String, // 64-bit values
 
     #[arg(short, long, default_value_t = 30)]
