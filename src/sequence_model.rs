@@ -176,10 +176,12 @@ impl SequenceGrammarModel {
         let annotation_records: Result<HashMap<String, Vec<u64>>, std::io::Error> = get_annotations(&args.annotation.clone());
         
         let mut grammar = Vec::new();
+        
+        //TODO: gather repeats across the whole reference not per sequence
         while let Some(Ok(seq_record)) = seq_records.next() {
-            let annotation : &Vec<u64> = annotation_records.as_ref().expect("Error during GenMap record parsing")[seq_record.id()].as_ref();
             count_record(&seq_record, &mut kmer_counts, &mut char_counts, &mut ref_len, args.order);
 
+            let annotation : &Vec<u64> = annotation_records.as_ref().expect("Error during GenMap record parsing")[seq_record.id()].as_ref();
             let mut window_pos = Vec::new();
             let pat = find_best_pattern(annotation, &mut window_pos, args.kmer);
 

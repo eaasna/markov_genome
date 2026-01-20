@@ -15,8 +15,8 @@ use crate::args::{Cli, Commands};
 
 mod sequence_model;
 
-mod markov;
-use crate::markov::run_simulation;
+mod simulation;
+use crate::simulation::run_simulation;
 
 mod mutation;
 use crate::mutation::run_mutation;
