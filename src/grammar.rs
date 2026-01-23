@@ -28,6 +28,7 @@ impl Rule {
         assert!(self.pat.repeat_len == self.repeat_seq.len());
         assert!(self.repeat_seq.len() < seq.len());
 
+        //TODO: make sure that repeats do not overlap
         let mut repeat_positions = Vec::new();
         let mut count = 0;
         let repeats_to_simulate = self.pat.min_thresh / (self.ref_len * seq.len()) as u64;

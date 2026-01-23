@@ -56,6 +56,13 @@ fn simulate_markov(sequence_model : & impl SequenceModel, len : usize, seed : u6
         // apply decision border from random probability
         let p = rng.random_range(0.0..1.0);
         let mut cum_sum : usize = 0;
+        /* 
+        Reinert et al. 2000:
+        The maximum likelihood estimate for the transition probability of seeing AC given A is
+        mu^(C|A) = count(AC) / count(A)
+
+        Here state_sum is count(A) and next_count is {count(AA), count(AC), count(AG), count(AT)}
+        */
         let decision_border = ((state_sum as f64)* p) as usize;
         for i in 0..next_count.len() {
             cum_sum += next_count[i];
