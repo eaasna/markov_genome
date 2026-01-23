@@ -4,7 +4,13 @@ use clap::{Parser, Subcommand};
 #[command(version, about, long_about = None)]
 pub struct SimulateArgs {
     #[arg(short, long)]
-    pub input: String,
+    pub input: String,  // 8-bit alphabet
+
+    #[arg(short, long, default_value_t = String::default())]
+    pub annotation: String, // 64-bit values
+
+    #[arg(short, long, default_value_t = 30)]
+    pub kmer: u8,
 
     #[arg(short, long, default_value_t = String::from("seq.fasta"))]
     pub output: String,
@@ -13,7 +19,7 @@ pub struct SimulateArgs {
     pub lens: Vec<usize>,
 
     #[arg(long, default_value_t = 3)]
-    pub order: usize,
+    pub order: u8,
 
     #[arg(long, default_value_t = 42)]
     pub seed: u64,
